@@ -1,0 +1,198 @@
+*==============================MAIN ANALYSIS===================================*
+
+*Established obesity-related cancers here
+
+*Author: Anton Nilsson
+*Date: 2026-10-28
+*Stata version: 19
+
+*File 7
+
+*==============================================================================*
+
+cd \\micro.intra\projekt\P1161$\P1161_Gem\Anton\WCCI
+clear
+set more off
+
+*Established obesity-related cancers to analyze in males:
+local varlist_males "any_cancer any_ob_est_cancer cancer_detail_cat11 cancer_detail_cat14 cancer_middle_cat10 cancer_detail_cat21 cancer_middle_cat12 cancer_middle_cat14 cancer_middle_cat31 cancer_middle_cat33 cancer_middle_cat52 "
+*Established obesity-related cancers to analyze in females:
+local varlist_females "any_cancer any_ob_est_cancer any_ob_est_cancer_no_fem cancer_middle_cat10 cancer_detail_cat21 cancer_middle_cat14 pm_breast_cancer cancer_detail_cat41 cancer_middle_cat25  cancer_middle_cat31 cancer_middle_cat33 cancer_middle_cat38 cancer_middle_cat52 "
+
+foreach sex in males females{
+	use `sex'3_lmm_bl.dta
+
+	**Life-span analysis
+	estimates clear
+	foreach name of local varlist_`sex'{
+		
+		*Set follow-up time and outcome
+		
+		if "`name'"!="pm_breast_cancer" & "`name'"!="cancer_detail_cat41" {
+			stset dox, enter(fu_start1_58) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="pm_breast_cancer"{
+			stset dox, enter(fu_start1_postmen_breast) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="cancer_detail_cat41"{
+			stset dox, enter(fu_start1_93) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		*Cox regression
+		stcox b1.traj_q_weight c.weight_intercept_5kg b3.education b1.birth_country ///
+						  b2.marital_status b2.current_smoker c.mheight, strata(bcohort)
+		
+		*Save estimates
+		estimates store `name'
+	}
+	
+	*Estimation table for lifespan
+	etable, est("`varlist_`sex''") varlabel /// 
+	column(estimates) 													///
+	cstat(_r_b, nformat(%3.2f)) 										/// 
+	cstat(_r_ci, cidelimiter("-") sformat("(%s)") nformat(%3.2f)) 		/// 
+	cstat(_r_p, nformat(%5.3f))    										///
+	mstat(N_sub, nformat(%9.0fc) label("No. of participants")) 			/// 
+	mstat(N_fail, nformat(%9.0fc) label("No. of events")) 				/// 
+	title(Life span weight trajectories in quintiles and outcomes) 		///
+	export(Results\lifespan_`sex'_established_weight.xls, sheet(lifespan) modify)
+	
+	**Life span - per quintile step:
+	estimates clear
+	foreach name of local varlist_`sex'{
+		
+		if "`name'"!="pm_breast_cancer" & "`name'"!="cancer_detail_cat41" {
+			stset dox, enter(fu_start1_58) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="pm_breast_cancer"{
+			stset dox, enter(fu_start1_postmen_breast) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="cancer_detail_cat41"{
+			stset dox, enter(fu_start1_93) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		stcox traj_q_weight c.weight_intercept_5kg b3.education b1.birth_country ///
+						  b2.marital_status b2.current_smoker c.mheight, strata(bcohort)
+		estimates store `name'
+	}
+	
+	
+	*Estimation table for lifespan, per quintile step:
+	etable, est("`varlist_`sex''") varlabel /// 
+	column(estimates) 														///
+	cstat(_r_b, nformat(%3.2f)) 										/// 
+	cstat(_r_ci, cidelimiter("-") sformat("(%s)") nformat(%3.2f)) 		/// 
+	cstat(_r_p, nformat(%5.3f))    										///
+	mstat(N_sub, nformat(%9.0fc) label("No. of participants")) 			/// 
+	mstat(N_fail, nformat(%9.0fc) label("No. of events")) 				/// 
+	title(Life span weight trajectories in quintiles and outcomes)		///
+	export(Results\lifespan_`sex'_established_weight.xls, sheet(lifespan_q) modify)
+
+	**Agespan analysis
+	
+	*Slope 1:
+	estimates clear
+	foreach name of local varlist_`sex'{
+		
+		if "`name'"!="pm_breast_cancer" & "`name'"!="cancer_detail_cat41" {
+			stset dox, enter(fu_start1_58) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="pm_breast_cancer"{
+			stset dox, enter(fu_start1_postmen_breast) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="cancer_detail_cat41"{
+			stset dox, enter(fu_start1_93) failure(`name') origin(dob) scale(365.25)
+		}
+
+		stcox weight_slope_1_05kg weight_intercept_age_5kg b3.education b1.birth_country ///
+						  b2.marital_status b2.current_smoker c.mheight, strata(bcohort)
+		estimates store `name'
+	}
+	*Estimation table 
+	etable, est("`varlist_`sex''") varlabel /// 
+	column(estimates) 														///
+	cstat(_r_b, nformat(%3.2f)) 										/// 
+	cstat(_r_ci, cidelimiter("-") sformat("(%s)") nformat(%3.2f)) 		/// 
+	cstat(_r_p, nformat(%5.3f))									 		/// 
+	mstat(N_sub, nformat(%9.0fc) label("No. of participants")) 			/// 
+	mstat(N_fail, nformat(%9.0fc) label("No. of events")) 				/// 
+	title(Age span slopes and outcomes)									///
+	export(Results\agespan_`sex'_established_weight.xls, sheet(agespan1) modify)
+	
+	*Slope 2:
+	estimates clear
+	foreach name of local varlist_`sex'{
+		
+		if "`name'"!="pm_breast_cancer" & "`name'"!="cancer_detail_cat41" {
+			stset dox, enter(fu_start1_58) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="pm_breast_cancer"{
+			stset dox, enter(fu_start1_postmen_breast) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="cancer_detail_cat41"{
+			stset dox, enter(fu_start1_93) failure(`name') origin(dob) scale(365.25)
+		}
+
+		stcox weight_slope_1_05kg weight_slope_2_05kg weight_intercept_age_5kg b3.education b1.birth_country ///
+						  b2.marital_status b2.current_smoker c.mheight, strata(bcohort)
+		estimates store `name'
+	}
+	*Estimation table 
+	etable, est("`varlist_`sex''") varlabel /// 
+	column(estimates) 														///
+	cstat(_r_b, nformat(%3.2f)) 										/// 
+	cstat(_r_ci, cidelimiter("-") sformat("(%s)") nformat(%3.2f)) 		/// 
+	mstat(N_sub, nformat(%9.0fc) label("No. of participants")) 			/// 
+	mstat(N_fail, nformat(%9.0fc) label("No. of events")) 				/// 
+	title(Age span slopes and outcomes)									///
+	export(Results\agespan_`sex'_established_weight.xls, sheet(agespan2) modify)
+	
+	*Slope 3:
+	estimates clear
+	foreach name of local varlist_`sex'{
+		
+		if "`name'"!="pm_breast_cancer" & "`name'"!="cancer_detail_cat41" {
+			stset dox, enter(fu_start1_58) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="pm_breast_cancer"{
+			stset dox, enter(fu_start1_postmen_breast) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		if "`name'"=="cancer_detail_cat41"{
+			stset dox, enter(fu_start1_93) failure(`name') origin(dob) scale(365.25)
+		}
+		
+		stcox weight_slope_1_05kg weight_slope_2_05kg weight_slope_3_05kg weight_intercept_age_5kg b3.education b1.birth_country ///
+						  b2.marital_status b2.current_smoker c.mheight, strata(bcohort)
+		estimates store `name'
+	}
+	*Estimation table 
+	etable, est("`varlist_`sex''") varlabel /// 
+	column(estimates) 														///
+	cstat(_r_b, nformat(%3.2f)) 										/// 
+	cstat(_r_ci, cidelimiter("-") sformat("(%s)") nformat(%3.2f)) 		/// 
+	cstat(_r_p, nformat(%5.3f)) 		///
+	mstat(N_sub, nformat(%9.0fc) label("No. of participants")) 			/// 
+	mstat(N_fail, nformat(%9.0fc) label("No. of events")) 				/// 
+	title(Age span slopes and outcomes)									///
+	export(Results\agespan_`sex'_established_weight.xls, sheet(agespan3) modify)
+}
+
+
+
+	
+	
+	
+	
+	
+	
+	
