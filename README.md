@@ -20,7 +20,7 @@ Access to data requires ethical approval from the Swedish Ethical Review Board a
 - `12_analysis_noloss.do` conducts the sensitivity analysis excluding individuals losing weight
 - `13_analysis_2obs.do` conducts the sensitivity analysis for individuals with at least two weight measurements
 - `14_analysis_BMI.do` conducts the sensitivity analysis for BMI instead of weight
-- `15_analysis_obj_only` conducts the sensitivity analysis based only on objective weight measurements
+- `15_analysis_obj_only.do` conducts the sensitivity analysis based only on objective weight measurements
 
 ## Contact
 
